@@ -1,33 +1,31 @@
-import { createClient } from "@/lib/supabase/server";
+import Header from "@/components/layout/Header";
+import AlojamientosSection from "@/components/home/AlojamientosSection";
 
-export default async function AlojamientosPage() {
-  const supabase = await createClient();
-
-  const { data: espacios, error } = await supabase
-    .from("espacios")
-    .select("*");
-
-  if (error) {
-    return (
-      <main>
-        <h1>Error al consultar Supabase</h1>
-        <p>{error.message}</p>
-      </main>
-    );
-  }
-
+export default function AlojamientosPage() {
   return (
-    <main>
-      <h1>Alojamientos</h1>
+    <>
+      <Header />
 
-      {espacios?.map((espacio) => (
-        <div key={espacio.id}>
-          <h2>{espacio.nombre}</h2>
-          <p>{espacio.descripcion}</p>
-          <p>${espacio.precio_por_noche} por noche</p>
-          <p>Capacidad: {espacio.capacidad}</p>
-        </div>
-      ))}
-    </main>
+      <main>
+        <section className="bg-[var(--green-dark)] px-6 pb-16 pt-32 text-center text-white lg:px-10">
+          <div className="mx-auto max-w-3xl">
+            <p className="text-sm font-bold uppercase tracking-[0.25em] text-[var(--turquoise)]">
+              Mowgli&apos;s Platz
+            </p>
+
+            <h1 className="mt-3 text-5xl font-bold sm:text-6xl">
+              Alojamientos
+            </h1>
+
+            <p className="mx-auto mt-5 max-w-2xl leading-7 text-white/70">
+              Conocé nuestras opciones de hospedaje y encontrá la que mejor se
+              adapte a tu estadía en Puerto Viejo.
+            </p>
+          </div>
+        </section>
+
+        <AlojamientosSection />
+      </main>
+    </>
   );
 }
