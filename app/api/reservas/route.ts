@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
+import { enviarConfirmacionReserva } from "@/lib/email/enviarConfirmacionReserva";
+import { enviarAvisoAdministrador } from "@/lib/email/enviarAvisoAdministrador";
 
 type ReservaBody = {
   espacio_id?: number;
@@ -502,6 +504,46 @@ if (noDisponibles.has(espacioId)) {
         { status: 500 }
       );
     }
+
+      // CORREOS
+
+    const resultadosCorreo = await Promise.allSettled([
+    enviarConfirmacionReserva({
+    correo,
+    nombre,
+    codigoReserva: reserva.codigo_reserva,
+    alojamiento: espacio.nombre,
+    fechaInicio: reserva.fecha_inicio,
+    fechaFin: reserva.fecha_fin,
+    cantidadHuespedes,
+    incluyeDesayuno,
+    total: Number(reserva.total),
+  }),
+
+  enviarAvisoAdministrador({
+    nombreCliente: nombre,
+    correoCliente: correo,
+    telefono: telefono || null,
+    codigoReserva: reserva.codigo_reserva,
+    alojamiento: espacio.nombre,
+    fechaInicio: reserva.fecha_inicio,
+    fechaFin: reserva.fecha_fin,
+    cantidadHuespedes,
+    incluyeDesayuno,
+    total: Number(reserva.total),
+  }),
+]);
+
+resultadosCorreo.forEach((resultado, index) => {
+  if (resultado.status === "rejected") {
+    console.error(
+      index === 0
+        ? "Error enviando confirmación al cliente:"
+        : "Error enviando aviso al administrador:",
+      resultado.reason
+    );
+  }
+});
 
     return NextResponse.json(
       {
