@@ -10,16 +10,11 @@ export async function GET(request: Request) {
     const fechaFin = searchParams.get("fecha_fin");
     const huespedes = Number(searchParams.get("huespedes"));
 
+    // VALIDACIONES
+
     if (!fechaInicio || !fechaFin) {
       return NextResponse.json(
         { error: "Debe indicar las fechas de entrada y salida." },
-        { status: 400 }
-      );
-    }
-
-    if (!Number.isInteger(huespedes) || huespedes <= 0) {
-      return NextResponse.json(
-        { error: "La cantidad de huéspedes no es válida." },
         { status: 400 }
       );
     }
@@ -31,9 +26,16 @@ export async function GET(request: Request) {
       );
     }
 
+    if (!Number.isInteger(huespedes) || huespedes <= 0) {
+      return NextResponse.json(
+        { error: "La cantidad de huéspedes no es válida." },
+        { status: 400 }
+      );
+    }
+
     const supabase = await createClient();
 
-    // Obtener espacios activos
+    // OBTENER ESPACIOS ACTIVOS
 
     const { data: espacios, error: espaciosError } = await supabase
       .from("espacios")
@@ -44,6 +46,7 @@ export async function GET(request: Request) {
         capacidad,
         tipo,
         incluido_en_casa_completa,
+        seccion,
         precio_persona_extra,
         precio_mascota,
         max_mascotas
@@ -52,7 +55,7 @@ export async function GET(request: Request) {
       .order("id");
 
     if (espaciosError) {
-      console.error(espaciosError);
+      console.error("Error cargando espacios:", espaciosError);
 
       return NextResponse.json(
         { error: "No fue posible consultar los alojamientos." },
@@ -64,13 +67,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ espacios: [] });
     }
 
-    /*Obtener reservas que chocan con las fechas
-    Choque:
-    existente.inicio < nueva.fecha_fin
-    existente.fin > nueva.fecha_inicio
-    Esto permite:
-    check-out 10 → nuevo check-in 10
-    */
+    // RESERVAS QUE CHOCAN
+
     const { data: reservas, error: reservasError } = await supabase
       .from("reserva")
       .select("id, espacio_id, fecha_inicio, fecha_fin, estado")
@@ -79,7 +77,7 @@ export async function GET(request: Request) {
       .gt("fecha_fin", fechaInicio);
 
     if (reservasError) {
-      console.error(reservasError);
+      console.error("Error consultando reservas:", reservasError);
 
       return NextResponse.json(
         { error: "No fue posible consultar las reservaciones." },
@@ -87,8 +85,7 @@ export async function GET(request: Request) {
       );
     }
 
-    // Obtener bloqueos que chocan con las fechas
-    // Airbnb + manuales
+    // BLOQUEOS MANUALES / AIRBNB
 
     const { data: bloqueos, error: bloqueosError } = await supabase
       .from("bloqueo_espacio")
@@ -97,7 +94,7 @@ export async function GET(request: Request) {
       .gt("fecha_fin", fechaInicio);
 
     if (bloqueosError) {
-      console.error(bloqueosError);
+      console.error("Error consultando bloqueos:", bloqueosError);
 
       return NextResponse.json(
         { error: "No fue posible consultar los bloqueos." },
@@ -105,77 +102,288 @@ export async function GET(request: Request) {
       );
     }
 
-    const espaciosOcupadosDirectamente = new Set<number>();
+    // OCUPACIONES DIRECTAS
+
+    const ocupadosDirectamente = new Set<number>();
 
     reservas?.forEach((reserva) => {
-      espaciosOcupadosDirectamente.add(reserva.espacio_id);
+      ocupadosDirectamente.add(reserva.espacio_id);
     });
 
     bloqueos?.forEach((bloqueo) => {
-      espaciosOcupadosDirectamente.add(bloqueo.espacio_id);
+      ocupadosDirectamente.add(bloqueo.espacio_id);
     });
 
-    // Identificar Casa completa
+    // IDENTIFICAR ESPACIOS ESPECIALES
 
     const casaCompleta = espacios.find(
       (espacio) => espacio.tipo === "casa_completa"
     );
 
-    const habitacionesInternas = espacios.filter(
-      (espacio) => espacio.incluido_en_casa_completa === true
+    const casaCompletaEstudio = espacios.find(
+      (espacio) => espacio.tipo === "casa_completa_estudio"
     );
 
-    const algunaHabitacionInternaOcupada =
-      habitacionesInternas.some((habitacion) =>
-        espaciosOcupadosDirectamente.has(habitacion.id)
+    const estudio = espacios.find(
+      (espacio) => espacio.tipo === "estudio"
+    );
+
+    const secciones = espacios.filter(
+      (espacio) => espacio.tipo === "seccion"
+    );
+
+    const habitacionesIndividuales = espacios.filter(
+      (espacio) =>
+        espacio.tipo === "habitacion_individual" &&
+        espacio.incluido_en_casa_completa === true
+    );
+
+    // Todo lo que forma parte físicamente de la casa.
+    const espaciosCasa = [
+      ...secciones,
+      ...habitacionesIndividuales,
+    ];
+
+    // CALCULAR BLOQUEOS DERIVADOS
+
+    const noDisponibles = new Set<number>(ocupadosDirectamente);
+
+    ocupadosDirectamente.forEach((idOcupado) => {
+      const ocupado = espacios.find(
+        (espacio) => espacio.id === idOcupado
       );
 
-    const casaCompletaOcupada =
-      casaCompleta !== undefined &&
-      espaciosOcupadosDirectamente.has(casaCompleta.id);
+      if (!ocupado) {
+        return;
+      }
 
-    // Calcular disponibilidad
+      /*
+      SECCIÓN
+      
+      Sección 1 ocupada:
+      bloquea Habitación 2
+      bloquea Casa
+      bloquea Casa + Estudio
+      
+      Sección 2 funciona igual con Habitación 4.*/
+
+      if (ocupado.tipo === "seccion") {
+        const habitacionesDeLaSeccion =
+          habitacionesIndividuales.filter(
+            (habitacion) =>
+              habitacion.seccion === ocupado.seccion
+          );
+
+        habitacionesDeLaSeccion.forEach((habitacion) => {
+          noDisponibles.add(habitacion.id);
+        });
+
+        if (casaCompleta) {
+          noDisponibles.add(casaCompleta.id);
+        }
+
+        if (casaCompletaEstudio) {
+          noDisponibles.add(casaCompletaEstudio.id);
+        }
+      }
+
+      /*
+      HABITACIÓN INDIVIDUAL
+      
+      habitación 2 ocupada:
+      bloquea Sección 1 completa
+      bloquea Casa
+      bloquea Casa + Estudio
+      
+      Habitación 4 hace lo mismo con Sección 2.*/
+   
+
+      if (ocupado.tipo === "habitacion_individual") {
+        const seccionRelacionada = secciones.find(
+          (seccion) =>
+            seccion.seccion !== null &&
+            seccion.seccion === ocupado.seccion
+        );
+
+        if (seccionRelacionada) {
+          noDisponibles.add(seccionRelacionada.id);
+        }
+
+        if (casaCompleta) {
+          noDisponibles.add(casaCompleta.id);
+        }
+
+        if (casaCompletaEstudio) {
+          noDisponibles.add(casaCompletaEstudio.id);
+        }
+      }
+
+      /* CASA COMPLETA
+      
+       Bloquea:
+       ambas secciones
+       Habitación 2
+       Habitación 4
+       Casa + Estudio
+      
+       El Estudio individual sigue disponible.*/
+
+      if (ocupado.tipo === "casa_completa") {
+        espaciosCasa.forEach((espacioCasa) => {
+          noDisponibles.add(espacioCasa.id);
+        });
+
+        if (casaCompletaEstudio) {
+          noDisponibles.add(casaCompletaEstudio.id);
+        }
+      }
+
+      /* ESTUDIO
+      
+       Solamente afecta:
+       Estudio
+       Casa completa + Estudio
+      
+       La Casa normal sigue disponible.*/
+
+      if (ocupado.tipo === "estudio") {
+        if (casaCompletaEstudio) {
+          noDisponibles.add(casaCompletaEstudio.id);
+        }
+      }
+
+      /* CASA COMPLETA + ESTUDIO
+      
+       Bloquea todo:
+      secciones
+      habitaciones individuales
+      Casa
+      Estudio*/
+
+      if (ocupado.tipo === "casa_completa_estudio") {
+        espaciosCasa.forEach((espacioCasa) => {
+          noDisponibles.add(espacioCasa.id);
+        });
+
+        if (casaCompleta) {
+          noDisponibles.add(casaCompleta.id);
+        }
+
+        if (estudio) {
+          noDisponibles.add(estudio.id);
+        }
+      }
+    });
+
+    // RESPUESTA PARA EL FRONTEND
 
     const resultado = espacios.map((espacio) => {
-      let disponible = true;
-      let motivo: string | null = null;
+      // Capacidad
 
-      // Capacidad insuficiente
       if (huespedes > espacio.capacidad) {
-        disponible = false;
-        motivo = `Capacidad máxima: ${espacio.capacidad} huéspedes`;
+        return {
+          ...espacio,
+          disponible: false,
+          motivo: `Capacidad máxima: ${espacio.capacidad} huéspedes`,
+        };
       }
 
-      // Ocupación directa
-      else if (espaciosOcupadosDirectamente.has(espacio.id)) {
-        disponible = false;
-        motivo = "No disponible para las fechas seleccionadas";
+      // Disponible
+
+      if (!noDisponibles.has(espacio.id)) {
+        return {
+          ...espacio,
+          disponible: true,
+          motivo: null,
+        };
       }
 
-      // Si buscamos Casa completa y alguna habitación interna está ocupada
-      else if (
-        espacio.tipo === "casa_completa" &&
-        algunaHabitacionInternaOcupada
-      ) {
-        disponible = false;
-        motivo =
-          "Una habitación de la casa ya está reservada para estas fechas";
+      // Ocupado directamente
+
+      if (ocupadosDirectamente.has(espacio.id)) {
+        return {
+          ...espacio,
+          disponible: false,
+          motivo: "No disponible para las fechas seleccionadas",
+        };
       }
 
-      // Si buscamos habitación interna y Casa completa está ocupada
-      else if (
-        espacio.incluido_en_casa_completa === true &&
-        casaCompletaOcupada
-      ) {
-        disponible = false;
-        motivo =
-          "La casa completa está reservada para estas fechas";
+      // SECCIÓN
+
+      if (espacio.tipo === "seccion") {
+        const habitacionIndividualOcupada =
+          habitacionesIndividuales.some(
+            (habitacion) =>
+              habitacion.seccion === espacio.seccion &&
+              ocupadosDirectamente.has(habitacion.id)
+          );
+
+        return {
+          ...espacio,
+          disponible: false,
+
+          motivo: habitacionIndividualOcupada
+            ? "La habitación individual de esta sección ya está reservada"
+            : "La casa está reservada para estas fechas",
+        };
+      }
+
+      // HABITACIÓN INDIVIDUAL
+
+      if (espacio.tipo === "habitacion_individual") {
+        const seccionOcupada = secciones.some(
+          (seccion) =>
+            seccion.seccion === espacio.seccion &&
+            ocupadosDirectamente.has(seccion.id)
+        );
+
+        return {
+          ...espacio,
+          disponible: false,
+
+          motivo: seccionOcupada
+            ? "La sección a la que pertenece ya está reservada"
+            : "La casa está reservada para estas fechas",
+        };
+      }
+
+      // CASA
+
+      if (espacio.tipo === "casa_completa") {
+        return {
+          ...espacio,
+          disponible: false,
+          motivo:
+            "Una sección o habitación de la casa ya está reservada",
+        };
+      }
+
+      // ESTUDIO
+
+      if (espacio.tipo === "estudio") {
+        return {
+          ...espacio,
+          disponible: false,
+          motivo:
+            "La propiedad completa con estudio ya está reservada",
+        };
+      }
+
+      // CASA + ESTUDIO
+
+      if (espacio.tipo === "casa_completa_estudio") {
+        return {
+          ...espacio,
+          disponible: false,
+          motivo:
+            "Parte de la propiedad ya está reservada para estas fechas",
+        };
       }
 
       return {
         ...espacio,
-        disponible,
-        motivo,
+        disponible: false,
+        motivo: "No disponible para las fechas seleccionadas",
       };
     });
 
@@ -183,7 +391,7 @@ export async function GET(request: Request) {
       espacios: resultado,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Error inesperado:", error);
 
     return NextResponse.json(
       { error: "Ocurrió un error inesperado." },
