@@ -1,5 +1,6 @@
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import Link from "next/link";
+import ReservaEstadoBadge from "@/components/admin/ReservaEstadoBadge";
 
 export default async function ReservasAdminPage() {
   const supabase = createSupabaseAdmin();
@@ -154,9 +155,7 @@ export default async function ReservasAdminPage() {
                       </td>
 
                       <td className="px-5 py-4">
-                        <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-800">
-                          {reserva.estado}
-                        </span>
+                        <ReservaEstadoBadge estado={reserva.estado} />
                       </td>
 
                       <td className="px-5 py-4">

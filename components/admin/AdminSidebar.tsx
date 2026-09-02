@@ -4,7 +4,7 @@ import LogoutButton from "./LogoutButton";
 
 export default function AdminSidebar() {
   return (
-    <aside className="flex min-h-screen w-64 flex-col bg-[#173f32] p-5 text-white">
+    <aside className="flex w-full flex-col bg-[#173f32] p-5 text-white md:h-screen md:w-64 md:shrink-0 md:overflow-y-auto">
       <div className="mb-10">
         <p className="text-xs font-semibold uppercase tracking-widest text-[#72c8b5]">
           Administración
@@ -49,6 +49,13 @@ export default function AdminSidebar() {
           className="rounded-xl px-4 py-3 font-medium hover:bg-white/10"
         >
           Bloqueos
+        </Link>
+
+        <Link
+          href="/admin/tarifas"
+          className="rounded-xl px-4 py-3 font-medium hover:bg-white/10"
+        >
+          Tarifas
         </Link>
       </nav>
 

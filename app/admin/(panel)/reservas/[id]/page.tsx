@@ -2,8 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
-import ReservaEstadoActions from "@/components/admin/ReservaEstadoActions";
 
+import ReservaEstadoActions from "@/components/admin/ReservaEstadoActions";
+import ReservaEstadoBadge from "@/components/admin/ReservaEstadoBadge";
+import ReenviarCorreoButton from "@/components/admin/ReenviarCorreoButton";
 
 interface ReservaDetallePageProps {
   params: Promise<{
@@ -76,6 +78,7 @@ export default async function ReservaDetallePage({
         ← Volver a reservaciones
       </Link>
 
+      {/* ENCABEZADO */}
       <div className="mt-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wider text-[#286453]">
@@ -87,15 +90,20 @@ export default async function ReservaDetallePage({
           </h1>
         </div>
 
-        <span className="w-fit rounded-full bg-yellow-100 px-4 py-2 text-sm font-semibold text-yellow-800">
-          {reserva.estado}
-        </span>
+        <ReservaEstadoBadge estado={reserva.estado} />
       </div>
 
-      <ReservaEstadoActions
-      reservaId={reserva.id}
-        estado={reserva.estado}
-    />
+      {/* ACCIONES */}
+      <div className="mt-8 flex flex-wrap items-start gap-3">
+        <ReservaEstadoActions
+          reservaId={reserva.id}
+          estado={reserva.estado}
+        />
+
+        <ReenviarCorreoButton
+          reservaId={reserva.id}
+        />
+      </div>
 
       <div className="mt-10 grid gap-6 lg:grid-cols-2">
 
@@ -151,8 +159,7 @@ export default async function ReservaDetallePage({
               </p>
 
               <p className="font-semibold">
-                {alojamiento?.nombre ??
-                  "Sin alojamiento"}
+                {alojamiento?.nombre ?? "Sin alojamiento"}
               </p>
             </div>
 
@@ -229,9 +236,9 @@ export default async function ReservaDetallePage({
 
               <p className="text-2xl font-bold text-[#173f32]">
                 ₡
-                {Number(reserva.total).toLocaleString(
-                  "es-CR"
-                )}
+                {Number(
+                  reserva.total
+                ).toLocaleString("es-CR")}
               </p>
             </div>
           </div>
@@ -245,11 +252,13 @@ export default async function ReservaDetallePage({
 
           <div className="space-y-4">
             <div>
-              <p className="text-sm text-gray-500">
+              <p className="mb-2 text-sm text-gray-500">
                 Estado
               </p>
 
-              <p>{reserva.estado}</p>
+              <ReservaEstadoBadge
+                estado={reserva.estado}
+              />
             </div>
 
             <div>

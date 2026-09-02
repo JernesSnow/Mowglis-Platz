@@ -10,6 +10,7 @@ interface ConfirmacionReservaProps {
   cantidadHuespedes: number;
   incluyeDesayuno: boolean;
   total: number;
+  estado: string;
 }
 
 export async function enviarConfirmacionReserva({
@@ -22,6 +23,7 @@ export async function enviarConfirmacionReserva({
   cantidadHuespedes,
   incluyeDesayuno,
   total,
+  estado,
 }: ConfirmacionReservaProps) {
   const { data, error } = await resend.emails.send({
     from: "Mowgli's Platz <onboarding@resend.dev>",
@@ -56,7 +58,7 @@ export async function enviarConfirmacionReserva({
         </p>
 
         <p>
-          <strong>Estado:</strong> Pendiente
+          <strong>Estado:</strong> ${estado}
         </p>
 
         <p>

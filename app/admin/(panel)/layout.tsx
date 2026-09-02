@@ -18,12 +18,12 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f1df] md:flex">
-      <AdminSidebar />
+  <div className="bg-[#f5f1df] md:flex md:h-screen md:overflow-hidden">
+    <AdminSidebar />
 
-      <div className="min-w-0 flex-1">
-        {children}
-      </div>
+    <div className="min-w-0 flex-1 md:h-screen md:overflow-y-auto">
+      {children}
     </div>
-  );
+  </div>
+);
 }

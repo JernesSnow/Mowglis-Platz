@@ -175,7 +175,7 @@ export async function POST(request: Request) {
       );
     }
 
-// IDENTIFICAR ESTRUCTURA DE MOWGLI'S PLATZ
+// IDENTIFICAR ESTRUCTURA DE MOWGLIS PLATZ
 
 const casaCompleta = espacios.find(
   (item) => item.tipo === "casa_completa"
@@ -518,6 +518,7 @@ if (noDisponibles.has(espacioId)) {
     cantidadHuespedes,
     incluyeDesayuno,
     total: Number(reserva.total),
+    estado:"pendiente"
   }),
 
   enviarAvisoAdministrador({

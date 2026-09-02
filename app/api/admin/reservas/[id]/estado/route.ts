@@ -46,7 +46,8 @@ export async function PATCH(
 
     if (
       nuevoEstado !== "confirmada" &&
-      nuevoEstado !== "cancelada"
+      nuevoEstado !== "cancelada" &&
+      nuevoEstado !== "completada"
     ) {
       return NextResponse.json(
         { error: "Estado no permitido." },
@@ -109,18 +110,18 @@ export async function PATCH(
       );
     }
 
-    if (
-      nuevoEstado === "confirmada" &&
-      reservaActual.estado !== "pendiente"
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "Solo una reservación pendiente puede confirmarse.",
-        },
-        { status: 409 }
-      );
-    }
+      if (
+        nuevoEstado === "completada" &&
+        reservaActual.estado !== "confirmada"
+      ) {
+    return NextResponse.json(
+      {
+        error:
+          "Solo una reservación confirmada puede marcarse como completada.",
+      },
+      { status: 409 }
+    );
+  }
 
     // ACTUALIZAR
 

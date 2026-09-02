@@ -14,13 +14,14 @@ export default function ReservaEstadoActions({
 }: ReservaEstadoActionsProps) {
   const router = useRouter();
 
-  const [procesando, setProcesando] =
-    useState(false);
-
+  const [procesando, setProcesando] = useState(false);
   const [error, setError] = useState("");
 
   async function cambiarEstado(
-    nuevoEstado: "confirmada" | "cancelada"
+    nuevoEstado:
+      | "confirmada"
+      | "cancelada"
+      | "completada"
   ) {
     if (
       nuevoEstado === "cancelada" &&
@@ -81,7 +82,7 @@ export default function ReservaEstadoActions({
   }
 
   return (
-    <div className="mt-8">
+    <>
       <div className="flex flex-wrap gap-3">
         {estado === "pendiente" && (
           <button
@@ -95,6 +96,21 @@ export default function ReservaEstadoActions({
             {procesando
               ? "Procesando..."
               : "Confirmar reserva"}
+          </button>
+        )}
+
+        {estado === "confirmada" && (
+          <button
+            type="button"
+            disabled={procesando}
+            onClick={() =>
+              cambiarEstado("completada")
+            }
+            className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white disabled:opacity-50"
+          >
+            {procesando
+              ? "Procesando..."
+              : "Marcar como completada"}
           </button>
         )}
 
@@ -115,6 +131,6 @@ export default function ReservaEstadoActions({
           {error}
         </div>
       )}
-    </div>
+    </>
   );
 }
