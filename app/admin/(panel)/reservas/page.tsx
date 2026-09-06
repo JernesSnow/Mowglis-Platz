@@ -1,37 +1,62 @@
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import Link from "next/link";
-import ReservaEstadoBadge from "@/components/admin/ReservaEstadoBadge";
 
-export default async function ReservasAdminPage() {
+import ReservaEstadoBadge from "@/components/admin/ReservaEstadoBadge";
+import BuscarReservaForm from "@/components/admin/BuscarReservaForm";
+
+interface PageProps {
+  searchParams: Promise<{
+    buscar?: string;
+  }>;
+}
+
+export default async function ReservasAdminPage({
+  searchParams,
+}: PageProps) {
+  const { buscar } = await searchParams;
+
+  const busqueda = String(
+    buscar ?? ""
+  ).trim();
+
   const supabase = createSupabaseAdmin();
 
-  const { data: reservas, error } = await supabase
+  let consulta = supabase
     .from("reserva")
     .select(`
       id,
       codigo_reserva,
       fecha_inicio,
       fecha_fin,
-      cantidad_huespedes,
-      cantidad_mascotas,
-      incluye_desayuno,
       estado,
       origen,
-      precio_por_noche,
       total,
       created_at,
-      espacios (
-        nombre
-      ),
       cliente (
         nombre,
-        correo,
-        telefono
+        correo
+      ),
+      espacios (
+        nombre
       )
     `)
     .order("created_at", {
       ascending: false,
     });
+
+  // BUSCAR POR CÓDIGO
+
+  if (busqueda) {
+    consulta = consulta.ilike(
+      "codigo_reserva",
+      `%${busqueda}%`
+    );
+  }
+
+  const {
+    data: reservas,
+    error,
+  } = await consulta;
 
   if (error) {
     console.error(
@@ -42,6 +67,8 @@ export default async function ReservasAdminPage() {
 
   return (
     <main className="p-6 md:p-10">
+      {/* ENCABEZADO */}
+
       <div className="mb-8">
         <p className="text-sm font-semibold uppercase tracking-wider text-[#286453]">
           Administración
@@ -52,21 +79,48 @@ export default async function ReservasAdminPage() {
         </h1>
 
         <p className="mt-2 text-gray-600">
-          Consulta las reservaciones registradas en Mowgli&apos;s Platz.
+          Consulta las reservaciones registradas
+          en Mowgli&apos;s Platz.
         </p>
       </div>
+
+      {/* BUSCADOR */}
+
+      <div className="mb-8">
+        <BuscarReservaForm
+          valorInicial={busqueda}
+        />
+      </div>
+
+      {/* ERROR */}
 
       {error ? (
         <div className="rounded-2xl bg-red-50 p-5 text-red-700">
           No fue posible cargar las reservaciones.
         </div>
-      ) : !reservas || reservas.length === 0 ? (
-        <div className="rounded-2xl bg-white p-8 shadow-sm">
-          <p className="text-gray-600">
-            Todavía no hay reservaciones.
-          </p>
+      ) : !reservas ||
+        reservas.length === 0 ? (
+        <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
+          {busqueda ? (
+            <>
+              <p className="font-semibold text-[#173f32]">
+                No se encontraron reservaciones.
+              </p>
+
+              <p className="mt-2 text-sm text-gray-500">
+                No existe ninguna reservación que
+                coincida con &quot;{busqueda}&quot;.
+              </p>
+            </>
+          ) : (
+            <p className="text-gray-600">
+              Todavía no hay reservaciones.
+            </p>
+          )}
         </div>
       ) : (
+        /* TABLA */
+
         <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
@@ -105,12 +159,16 @@ export default async function ReservasAdminPage() {
               <tbody className="divide-y divide-gray-100">
                 {reservas.map((reserva) => {
                   const alojamiento =
-                    Array.isArray(reserva.espacios)
+                    Array.isArray(
+                      reserva.espacios
+                    )
                       ? reserva.espacios[0]
                       : reserva.espacios;
 
                   const cliente =
-                    Array.isArray(reserva.cliente)
+                    Array.isArray(
+                      reserva.cliente
+                    )
                       ? reserva.cliente[0]
                       : reserva.cliente;
 
@@ -119,14 +177,18 @@ export default async function ReservasAdminPage() {
                       key={reserva.id}
                       className="hover:bg-gray-50"
                     >
+                      {/* CÓDIGO */}
+
                       <td className="px-5 py-4">
                         <Link
-                            href={`/admin/reservas/${reserva.id}`}
-                            className="font-semibold text-[#286453] hover:underline"
+                          href={`/admin/reservas/${reserva.id}`}
+                          className="font-semibold text-[#286453] hover:underline"
                         >
-                            {reserva.codigo_reserva}
+                          {reserva.codigo_reserva}
                         </Link>
-                     </td>
+                      </td>
+
+                      {/* CLIENTE */}
 
                       <td className="px-5 py-4">
                         <p className="font-medium">
@@ -139,10 +201,14 @@ export default async function ReservasAdminPage() {
                         </p>
                       </td>
 
+                      {/* ALOJAMIENTO */}
+
                       <td className="px-5 py-4">
                         {alojamiento?.nombre ??
                           "Sin alojamiento"}
                       </td>
+
+                      {/* FECHAS */}
 
                       <td className="px-5 py-4 text-sm">
                         <p>
@@ -150,17 +216,31 @@ export default async function ReservasAdminPage() {
                         </p>
 
                         <p className="text-gray-500">
-                          hasta {reserva.fecha_fin}
+                          hasta{" "}
+                          {reserva.fecha_fin}
                         </p>
                       </td>
 
-                      <td className="px-5 py-4">
-                        <ReservaEstadoBadge estado={reserva.estado} />
-                      </td>
+                      {/* ESTADO */}
 
                       <td className="px-5 py-4">
-                        {reserva.origen}
+                        <ReservaEstadoBadge
+                          estado={
+                            reserva.estado
+                          }
+                        />
                       </td>
+
+                      {/* ORIGEN */}
+
+                      <td className="px-5 py-4">
+                        {reserva.origen ===
+                        "admin"
+                          ? "Administración"
+                          : "Web"}
+                      </td>
+
+                      {/* TOTAL */}
 
                       <td className="px-5 py-4 text-right font-semibold">
                         ₡

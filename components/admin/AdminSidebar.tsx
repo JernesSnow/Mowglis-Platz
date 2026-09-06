@@ -57,6 +57,13 @@ export default function AdminSidebar() {
         >
           Tarifas
         </Link>
+
+        <Link
+          href="/admin/integraciones"
+          className="rounded-xl px-4 py-3 font-medium hover:bg-white/10"
+        >
+          Integraciones
+        </Link>
       </nav>
 
       <div className="border-t border-white/10 pt-4">
