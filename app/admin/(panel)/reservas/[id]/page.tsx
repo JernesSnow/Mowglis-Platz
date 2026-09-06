@@ -100,6 +100,16 @@ export default async function ReservaDetallePage({
           estado={reserva.estado}
         />
 
+        {reserva.estado !== "cancelada" &&
+        reserva.estado !== "completada" && (
+      <Link
+        href={`/admin/reservas/${reserva.id}/editar`}
+        className="rounded-xl border border-[#286453] bg-white px-5 py-3 font-semibold text-[#286453] hover:bg-[#286453]/5"
+      >
+        Editar reservación
+      </Link>
+    )}
+
         <ReenviarCorreoButton
           reservaId={reserva.id}
         />

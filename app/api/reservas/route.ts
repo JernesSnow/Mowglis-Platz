@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { enviarConfirmacionReserva } from "@/lib/email/enviarConfirmacionReserva";
 import { enviarAvisoAdministrador } from "@/lib/email/enviarAvisoAdministrador";
+import { calcularNoDisponibles } from "@/lib/reservas/calcularNoDisponibles";
 
 type ReservaBody = {
   espacio_id?: number;
@@ -156,7 +157,6 @@ export async function POST(request: Request) {
     }
 
     // OBTENER TODOS LOS ESPACIOS
-    // Necesitamos conocer Casa completa ↔ habitaciones.
 
     const { data: espacios, error: espaciosError } = await supabase
       .from("espacios")
@@ -175,192 +175,85 @@ export async function POST(request: Request) {
       );
     }
 
-// IDENTIFICAR ESTRUCTURA DE MOWGLIS PLATZ
+    // RESERVAS QUE CHOCAN
 
-const casaCompleta = espacios.find(
-  (item) => item.tipo === "casa_completa"
-);
+    const { data: reservas, error: reservasError } = await supabase
+      .from("reserva")
+      .select("espacio_id")
+      .neq("estado", "cancelada")
+      .lt("fecha_inicio", fechaFin)
+      .gt("fecha_fin", fechaInicio);
 
-const casaCompletaEstudio = espacios.find(
-  (item) => item.tipo === "casa_completa_estudio"
-);
+    if (reservasError) {
+      console.error(
+        "Error consultando reservas:",
+        reservasError
+      );
 
-const estudio = espacios.find(
-  (item) => item.tipo === "estudio"
-);
-
-const secciones = espacios.filter(
-  (item) => item.tipo === "seccion"
-);
-
-const habitacionesIndividuales = espacios.filter(
-  (item) =>
-    item.tipo === "habitacion_individual" &&
-    item.incluido_en_casa_completa === true
-);
-
-const espaciosCasa = [
-  ...secciones,
-  ...habitacionesIndividuales,
-];
-
-// RESERVAS QUE CHOCAN
-
-
-const { data: reservas, error: reservasError } = await supabase
-  .from("reserva")
-  .select("espacio_id")
-  .neq("estado", "cancelada")
-  .lt("fecha_inicio", fechaFin)
-  .gt("fecha_fin", fechaInicio);
-
-if (reservasError) {
-  console.error("Error consultando reservas:", reservasError);
-
-  return NextResponse.json(
-    { error: "No fue posible validar las reservaciones existentes." },
-    { status: 500 }
-  );
-}
-
-// BLOQUEOS QUE CHOCAN
-
-const { data: bloqueos, error: bloqueosError } = await supabase
-  .from("bloqueo_espacio")
-  .select("espacio_id")
-  .lt("fecha_inicio", fechaFin)
-  .gt("fecha_fin", fechaInicio);
-
-if (bloqueosError) {
-  console.error("Error consultando bloqueos:", bloqueosError);
-
-  return NextResponse.json(
-    { error: "No fue posible validar los bloqueos existentes." },
-    { status: 500 }
-  );
-}
-
-// OCUPACIONES DIRECTAS
-
-const ocupadosDirectamente = new Set<number>();
-
-reservas?.forEach((reserva) => {
-  ocupadosDirectamente.add(reserva.espacio_id);
-});
-
-bloqueos?.forEach((bloqueo) => {
-  ocupadosDirectamente.add(bloqueo.espacio_id);
-});
-
-// CALCULAR BLOQUEOS DERIVADOS
-
-const noDisponibles = new Set<number>(ocupadosDirectamente);
-
-ocupadosDirectamente.forEach((idOcupado) => {
-  const ocupado = espacios.find(
-    (item) => item.id === idOcupado
-  );
-
-  if (!ocupado) {
-    return;
-  }
-
-  // SECCIÓN
-  // Sección 1 bloquea Habitación 2.
-  // Sección 2 bloquea Habitación 4.
-
-  if (ocupado.tipo === "seccion") {
-    habitacionesIndividuales
-      .filter(
-        (habitacion) =>
-          habitacion.seccion === ocupado.seccion
-      )
-      .forEach((habitacion) => {
-        noDisponibles.add(habitacion.id);
-      });
-
-    if (casaCompleta) {
-      noDisponibles.add(casaCompleta.id);
+      return NextResponse.json(
+        {
+          error:
+            "No fue posible validar las reservaciones existentes.",
+        },
+        { status: 500 }
+      );
     }
 
-    if (casaCompletaEstudio) {
-      noDisponibles.add(casaCompletaEstudio.id);
+    // BLOQUEOS QUE CHOCAN
+
+    const { data: bloqueos, error: bloqueosError } = await supabase
+      .from("bloqueo_espacio")
+      .select("espacio_id")
+      .lt("fecha_inicio", fechaFin)
+      .gt("fecha_fin", fechaInicio);
+
+    if (bloqueosError) {
+      console.error(
+        "Error consultando bloqueos:",
+        bloqueosError
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "No fue posible validar los bloqueos existentes.",
+        },
+        { status: 500 }
+      );
     }
-  }
 
-  // HABITACIÓN INDIVIDUAL
-  // Habitación 2 bloquea Sección 1.
-  // Habitación 4 bloquea Sección 2.
+    // OCUPACIONES DIRECTAS
 
-  if (ocupado.tipo === "habitacion_individual") {
-    const seccionRelacionada = secciones.find(
-      (seccion) =>
-        seccion.seccion !== null &&
-        seccion.seccion === ocupado.seccion
+    const ocupadosDirectamente = new Set<number>();
+
+    reservas?.forEach((reserva) => {
+      ocupadosDirectamente.add(reserva.espacio_id);
+    });
+
+    bloqueos?.forEach((bloqueo) => {
+      ocupadosDirectamente.add(bloqueo.espacio_id);
+    });
+
+    // CALCULAR BLOQUEOS DERIVADOS
+
+    const noDisponibles = calcularNoDisponibles(
+      espacios,
+      ocupadosDirectamente
     );
 
-    if (seccionRelacionada) {
-      noDisponibles.add(seccionRelacionada.id);
+    // VALIDACIÓN FINAL
+
+    if (noDisponibles.has(espacioId)) {
+      return NextResponse.json(
+        {
+          error:
+            "El alojamiento seleccionado ya no está disponible para esas fechas.",
+        },
+        { status: 409 }
+      );
     }
 
-    if (casaCompleta) {
-      noDisponibles.add(casaCompleta.id);
-    }
 
-    if (casaCompletaEstudio) {
-      noDisponibles.add(casaCompletaEstudio.id);
-    }
-  }
-
-  // CASA COMPLETA SIN ESTUDIO
-  
-
-  if (ocupado.tipo === "casa_completa") {
-    espaciosCasa.forEach((item) => {
-      noDisponibles.add(item.id);
-    });
-
-    if (casaCompletaEstudio) {
-      noDisponibles.add(casaCompletaEstudio.id);
-    }
-  }
-
-  // ESTUDIO
-
-  if (ocupado.tipo === "estudio") {
-    if (casaCompletaEstudio) {
-      noDisponibles.add(casaCompletaEstudio.id);
-    }
-  }
-
-  // CASA COMPLETA + ESTUDIO
-
-  if (ocupado.tipo === "casa_completa_estudio") {
-    espaciosCasa.forEach((item) => {
-      noDisponibles.add(item.id);
-    });
-
-    if (casaCompleta) {
-      noDisponibles.add(casaCompleta.id);
-    }
-
-    if (estudio) {
-      noDisponibles.add(estudio.id);
-    }
-  }
-});
-
-// VALIDACIÓN FINAL
-
-if (noDisponibles.has(espacioId)) {
-  return NextResponse.json(
-    {
-      error:
-        "El alojamiento seleccionado ya no está disponible para esas fechas.",
-    },
-    { status: 409 }
-  );
-}
 
     // CALCULAR NOCHES
 
