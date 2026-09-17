@@ -21,7 +21,13 @@ export default async function ReservarPage({ searchParams }: Props) {
       capacidad,
       precio_persona_extra,
       precio_mascota,
-      max_mascotas
+      max_mascotas,
+      imagenes (
+        id,
+        url,
+        alt_text,
+        orden,
+        es_principal)
     `)
     .eq("estado", "activo")
     .order("id");
@@ -45,19 +51,64 @@ if (tarifasError) {
   console.error("Error cargando tarifas:", tarifasError);
 }
   const espaciosConTarifas =
-    espacios?.map((item) => ({
-      ...item,
+    espacios?.map((item) => {
+      const imagenesOrdenadas = [
+        ...(item.imagenes ?? []),
+      ].sort(
+        (a, b) =>
+          Number(a.orden ?? 0) -
+          Number(b.orden ?? 0)
+      );
 
-      tarifas:
-        tarifas
-          ?.filter((tarifa) => tarifa.espacio_id === item.id)
-          .map((tarifa) => ({
-            id: tarifa.id,
-            cantidad_huespedes: tarifa.cantidad_huespedes,
-            incluye_desayuno: tarifa.incluye_desayuno,
-            precio_por_noche: Number(tarifa.precio_por_noche),
-          })) ?? [],
-    })) ?? [];
+      const imagenPrincipal =
+        imagenesOrdenadas.find(
+          (imagen) =>
+            imagen.es_principal
+        ) ??
+        imagenesOrdenadas[0] ??
+        null;
+
+      return {
+        id: item.id,
+        nombre: item.nombre,
+        capacidad: item.capacidad,
+        precio_persona_extra:
+          item.precio_persona_extra,
+        precio_mascota:
+          item.precio_mascota,
+        max_mascotas:
+          item.max_mascotas,
+
+        imagen_principal:
+          imagenPrincipal
+            ? {
+                url:
+                  imagenPrincipal.url,
+                alt_text:
+                  imagenPrincipal.alt_text,
+              }
+            : null,
+
+        tarifas:
+          tarifas
+            ?.filter(
+              (tarifa) =>
+                tarifa.espacio_id ===
+                item.id
+            )
+            .map((tarifa) => ({
+              id: tarifa.id,
+              cantidad_huespedes:
+                tarifa.cantidad_huespedes,
+              incluye_desayuno:
+                tarifa.incluye_desayuno,
+              precio_por_noche:
+                Number(
+                  tarifa.precio_por_noche
+                ),
+            })) ?? [],
+      };
+    }) ?? [];
 
   const espacioInicial = espacio ? Number(espacio) : undefined;
 

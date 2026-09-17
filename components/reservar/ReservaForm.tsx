@@ -13,9 +13,22 @@ type Espacio = {
   id: number;
   nombre: string;
   capacidad: number;
-  precio_persona_extra: number | null;
-  precio_mascota: number | null;
+
+  precio_persona_extra:
+    | number
+    | null;
+
+  precio_mascota:
+    | number
+    | null;
+
   max_mascotas: number;
+
+  imagen_principal: {
+    url: string;
+    alt_text: string | null;
+  } | null;
+
   tarifas: Tarifa[];
 };
 
@@ -466,7 +479,18 @@ export default function ReservaForm({
     ) : (
       <div className="space-y-4">
         {resultados.map((espacio) => {
-          const seleccionado = espacioId === espacio.id;
+          const seleccionado =
+            espacioId === espacio.id;
+
+          const datosEspacio =
+            espacios.find(
+              (item) =>
+                item.id === espacio.id
+            );
+
+          const imagenPrincipal =
+            datosEspacio?.imagen_principal ??
+            null;
 
           return (
             <div
@@ -485,8 +509,36 @@ export default function ReservaForm({
                 }
               `}
             >
-              <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
-                <div>
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+                {/* FOTO */}
+
+                <div className="aspect-[4/3] w-full shrink-0 overflow-hidden rounded-2xl bg-[var(--green-dark)]/10 sm:w-40">
+                  {imagenPrincipal ? (
+                    <img
+                      src={
+                        imagenPrincipal.url
+                      }
+                      alt={
+                        imagenPrincipal.alt_text ??
+                        espacio.nombre
+                      }
+                      loading="lazy"
+                      className={`h-full w-full object-cover ${
+                        espacio.disponible
+                          ? ""
+                          : "opacity-60 grayscale-[30%]"
+                      }`}
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center p-4 text-center text-xs text-[var(--green-dark)]/40">
+                      Sin fotografía
+                    </div>
+                  )}
+                </div>
+
+                {/* INFORMACIÓN */}
+
+                <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-3">
                     <h3 className="text-xl font-bold text-[var(--green-dark)]">
                       {espacio.nombre}
@@ -504,27 +556,38 @@ export default function ReservaForm({
                   </div>
 
                   <p className="mt-2 text-sm text-[var(--green-dark)]/60">
-                    Hasta {espacio.capacidad} huéspedes
+                    Hasta{" "}
+                    {espacio.capacidad}{" "}
+                    huéspedes
                   </p>
 
-                  {!espacio.disponible && espacio.motivo && (
-                    <p className="mt-3 text-sm font-medium text-red-700">
-                      {espacio.motivo}
-                    </p>
-                  )}
+                  {!espacio.disponible &&
+                    espacio.motivo && (
+                      <p className="mt-3 text-sm font-medium text-red-700">
+                        {espacio.motivo}
+                      </p>
+                    )}
                 </div>
+
+                {/* BOTÓN */}
 
                 {espacio.disponible && (
                   <button
                     type="button"
-                    onClick={() => seleccionarEspacio(espacio.id)}
+                    onClick={() =>
+                      seleccionarEspacio(
+                        espacio.id
+                      )
+                    }
                     className={
                       seleccionado
-                        ? "rounded-full bg-[var(--green-dark)] px-6 py-3 font-bold text-white"
-                        : "rounded-full bg-white px-6 py-3 font-bold text-[var(--green-dark)] shadow-sm hover:scale-105"
+                        ? "shrink-0 rounded-full bg-[var(--green-dark)] px-6 py-3 font-bold text-white"
+                        : "shrink-0 rounded-full bg-white px-6 py-3 font-bold text-[var(--green-dark)] shadow-sm transition hover:scale-105"
                     }
                   >
-                    {seleccionado ? "Seleccionado" : "Seleccionar"}
+                    {seleccionado
+                      ? "Seleccionado"
+                      : "Seleccionar"}
                   </button>
                 )}
               </div>
@@ -557,6 +620,37 @@ export default function ReservaForm({
               .
             </p>
           </div>
+
+          {espacioSeleccionado.imagen_principal && (
+            <div className="mb-7 overflow-hidden rounded-[2rem] bg-[var(--cream)]">
+              <div className="aspect-[16/7] overflow-hidden">
+                <img
+                  src={
+                    espacioSeleccionado
+                      .imagen_principal.url
+                  }
+                  alt={
+                    espacioSeleccionado
+                      .imagen_principal.alt_text ??
+                    espacioSeleccionado.nombre
+                  }
+                  className="h-full w-full object-cover"
+                />
+              </div>
+
+              <div className="p-5">
+                <p className="font-bold text-[var(--green-dark)]">
+                  {espacioSeleccionado.nombre}
+                </p>
+
+                <p className="mt-1 text-sm text-[var(--green-dark)]/60">
+                  Hasta{" "}
+                  {espacioSeleccionado.capacidad}{" "}
+                  huéspedes
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Desayuno */}
 
