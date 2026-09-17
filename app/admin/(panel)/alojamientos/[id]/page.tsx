@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import EditarAlojamientoForm from "@/components/admin/EditarAlojamientoForm";
 import SubirImagenAlojamientoForm from "@/components/admin/SubirImagenAlojamientoForm";
+import ImagenAlojamientoActions from "@/components/admin/ImagenAlojamientoActions";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 
 interface PageProps {
@@ -162,6 +163,11 @@ export default async function EditarAlojamientoPage({
                           "Sin descripción"}
                       </p>
                     </div>
+                    <ImagenAlojamientoActions
+                      espacioId={espacio.id}
+                      imagenId={imagen.id}
+                      esPrincipal={imagen.es_principal ?? false}
+                    />
                   </article>
                 ))}
               </div>
