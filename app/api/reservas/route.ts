@@ -390,10 +390,31 @@ export async function POST(request: Request) {
       .single();
 
     if (reservaError || !reserva) {
-      console.error("Error creando reserva:", reservaError);
+      console.error(
+        "Error creando reserva:",
+        reservaError
+      );
+
+      if (
+        reservaError?.code === "23P01" &&
+        reservaError.message.includes(
+          "ALOJAMIENTO_NO_DISPONIBLE"
+        )
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "El alojamiento acaba de dejar de estar disponible para esas fechas. Elegí otra opción o modificá las fechas.",
+          },
+          { status: 409 }
+        );
+      }
 
       return NextResponse.json(
-        { error: "No fue posible crear la reservación." },
+        {
+          error:
+            "No fue posible crear la reservación.",
+        },
         { status: 500 }
       );
     }
