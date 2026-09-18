@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { calcularNoDisponibles } from "@/lib/reservas/calcularNoDisponibles";
 
 export async function GET(request: Request) {
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const supabase = await createClient();
+    const supabase = createSupabaseAdmin();
 
     // OBTENER ESPACIOS ACTIVOS
 
