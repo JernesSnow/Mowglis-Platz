@@ -109,7 +109,7 @@ export async function POST(
         reserva.codigo_reserva,
       alojamiento:
         alojamiento?.nombre ??
-        "Mowgli's Platz",
+        "Mowglis Platz",
       fechaInicio:
         reserva.fecha_inicio,
       fechaFin:

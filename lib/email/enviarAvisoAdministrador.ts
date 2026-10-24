@@ -35,7 +35,7 @@ export async function enviarAvisoAdministrador({
 
   const { data, error } = await resend.emails.send({
 
-    from: "Mowgli's Platz <onboarding@resend.dev>",
+    from: "Mowglis Platz <onboarding@resend.dev>",
     to: adminEmail,
     subject: `Nueva reservación - ${codigoReserva}`,
 

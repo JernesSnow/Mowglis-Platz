@@ -11,7 +11,7 @@ export default function AboutSection() {
         <div className="relative">
           <div className="aspect-[4/3] overflow-hidden rounded-[2.5rem] bg-[var(--turquoise)]/30">
             <div className="flex h-full items-center justify-center px-10 text-center text-[var(--green-dark)]/60">
-              Fotografía de Mowgli&apos;s Platz
+              Fotografía de Mowglis Platz
             </div>
           </div>
 
@@ -31,7 +31,7 @@ export default function AboutSection() {
           </h2>
 
           <p className="mt-6 text-lg leading-8 text-[var(--green-dark)]/75">
-            En Mowgli&apos;s Platz ofrecemos un lugar tranquilo para relajarse
+            En Mowglis Platz ofrecemos un lugar tranquilo para relajarse
             y descansar de la ciudad, rodeado de paz y naturaleza.
           </p>
 

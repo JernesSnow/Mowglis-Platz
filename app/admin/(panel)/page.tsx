@@ -41,7 +41,7 @@ export default async function AdminPage() {
         </h1>
 
         <p className="mt-2 text-gray-600">
-          Gestión de Mowgli&apos;s Platz
+          Gestión de Mowglis Platz
         </p>
       </div>
 

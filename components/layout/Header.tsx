@@ -10,7 +10,7 @@ export default function Header() {
           href="/"
           className="text-xl !font-bold !tracking-wide !text-white"
         >
-          MOWGLI&apos;S PLATZ
+          MOWGLIS PLATZ
         </Link>
 
         {/* Navegación */}

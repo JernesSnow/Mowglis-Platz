@@ -65,7 +65,7 @@ export default async function AlojamientoPage({ params }: Props) {
             </Link>
 
             <p className="mb-3 text-sm font-bold uppercase tracking-[0.25em] text-[var(--turquoise)]">
-              Mowgli&apos;s Platz
+              Mowglis Platz
             </p>
 
             <h1 className="text-4xl font-bold sm:text-5xl lg:text-6xl">

@@ -155,7 +155,7 @@ export default async function CalendarioAdminPage() {
         <p className="mt-2 max-w-3xl text-gray-600">
           Consulta visualmente la ocupación,
           reservaciones y bloqueos de
-          Mowgli&apos;s Platz.
+          Mowglis Platz.
         </p>
       </div>
 

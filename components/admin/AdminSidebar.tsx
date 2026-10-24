@@ -11,7 +11,7 @@ export default function AdminSidebar() {
         </p>
 
         <h2 className="mt-2 text-2xl font-bold">
-          Mowgli&apos;s Platz
+          Mowglis Platz
         </h2>
       </div>
 

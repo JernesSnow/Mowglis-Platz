@@ -18,7 +18,7 @@ export default function Hero() {
           <h1 className="text-5xl font-bold leading-tight text-white sm:text-6xl lg:text-7xl">
             Bienvenido a
             <span className="block text-[var(--yellow)]">
-              Mowgli&apos;s Platz
+              Mowglis Platz
             </span>
           </h1>
 
@@ -68,7 +68,7 @@ export default function Hero() {
         <div className="relative hidden lg:block">
           <div className="aspect-[4/5] overflow-hidden rounded-[3rem] border border-white/10 bg-white/10">
             <div className="flex h-full items-center justify-center px-10 text-center text-white/60">
-              Aquí colocaremos una fotografía principal de Mowgli&apos;s Platz
+              Aquí colocaremos una fotografía principal de Mowglis Platz
             </div>
           </div>
         </div>

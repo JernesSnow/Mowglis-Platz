@@ -26,13 +26,13 @@ export async function enviarConfirmacionReserva({
   estado,
 }: ConfirmacionReservaProps) {
   const { data, error } = await resend.emails.send({
-    from: "Mowgli's Platz <onboarding@resend.dev>",
+    from: "Mowglis Platz <onboarding@resend.dev>",
     to: correo,
     subject: `Reservación recibida - ${codigoReserva}`,
 
     html: `
       <div style="font-family: Arial, sans-serif; color: #19382d;">
-        <h1>¡Gracias por reservar con Mowgli's Platz!</h1>
+        <h1>¡Gracias por reservar con Mowglis Platz!</h1>
 
         <p>Hola ${nombre},</p>
 
@@ -66,7 +66,7 @@ export async function enviarConfirmacionReserva({
           como referencia de tu reservación.
         </p>
 
-        <p>Gracias,<br />Mowgli's Platz</p>
+        <p>Gracias,<br />Mowglis Platz</p>
       </div>
     `,
   });

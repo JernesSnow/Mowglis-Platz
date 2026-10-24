@@ -80,7 +80,7 @@ export default async function ReservasAdminPage({
 
         <p className="mt-2 text-gray-600">
           Consulta las reservaciones registradas
-          en Mowgli&apos;s Platz.
+          en Mowglis Platz.
         </p>
       </div>
 

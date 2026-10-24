@@ -58,7 +58,7 @@ export default function LoginForm() {
         </p>
 
         <h1 className="text-3xl font-bold text-[#173f32]">
-          Mowgli&apos;s Platz
+          Mowglis Platz
         </h1>
 
         <p className="mt-2 text-sm text-gray-600">

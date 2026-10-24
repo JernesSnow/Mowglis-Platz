@@ -60,7 +60,7 @@ export default async function CalendarioAdminPage() {
         </h1>
 
         <p className="mt-2 max-w-3xl text-gray-600">
-          Configura servicios externos que pueden conectarse con Mowgli&apos;s Platz.
+          Configura servicios externos que pueden conectarse con Mowglis Platz.
         </p>
       </div>
 
